@@ -2,8 +2,11 @@ package com.wangxiandeng.floatball;
 
 
 import android.accessibilityservice.AccessibilityService;
+import android.app.admin.DevicePolicyManager;
 import android.content.Context;
+import android.nfc.Tag;
 import android.os.Vibrator;
+import android.util.Log;
 import android.util.TypedValue;
 import android.view.MotionEvent;
 import android.view.View;
@@ -19,6 +22,8 @@ import java.lang.reflect.Field;
  */
 
 public class FloatBallView extends LinearLayout {
+    private final static String TAG = FloatBallView.class.getSimpleName();
+
     private ImageView mImgBall;
     private ImageView mImgBigBall;
     private ImageView mImgBg;
@@ -27,6 +32,10 @@ public class FloatBallView extends LinearLayout {
 
     private WindowManager.LayoutParams mLayoutParams;
 
+    private DevicePolicyManager mDevicePolicyManager;
+
+    private long tempLastUpTime;
+    private long mLastUpTime;
     private long mLastDownTime;
     private float mLastDownX;
     private float mLastDownY;
@@ -70,6 +79,8 @@ public class FloatBallView extends LinearLayout {
         mService = (AccessibilityService) context;
         mVibrator = (Vibrator) getContext().getSystemService(Context.VIBRATOR_SERVICE);
         mWindowManager = (WindowManager) getContext().getSystemService(Context.WINDOW_SERVICE);
+        mDevicePolicyManager = (DevicePolicyManager) getContext().getSystemService(Context.DEVICE_POLICY_SERVICE);
+        mLastDownTime = System.currentTimeMillis();
         initView();
     }
 
@@ -102,6 +113,7 @@ public class FloatBallView extends LinearLayout {
                         mIsTouching = true;
                         mImgBall.setVisibility(INVISIBLE);
                         mImgBigBall.setVisibility(VISIBLE);
+
                         mLastDownTime = System.currentTimeMillis();
                         mLastDownX = event.getX();
                         mLastDownY = event.getY();
@@ -133,13 +145,30 @@ public class FloatBallView extends LinearLayout {
                     case MotionEvent.ACTION_CANCEL:
                     case MotionEvent.ACTION_UP:
                         mIsTouching = false;
+                        tempLastUpTime = mLastUpTime;
                         if (mIsLongTouch) {
                             mIsLongTouch = false;
+                            Log.i(TAG,"mIsLongTouch");
+                        } else if (isDoubleClick()) {
+                            Log.i(TAG,"isDoubleClick");
+                            mDevicePolicyManager.lockNow();
                         } else if (isClick(event)) {
-                            AccessibilityUtil.doBack(mService);
+                            postDelayed(new Runnable() {
+                                @Override
+                                public void run() {
+                                    if (mLastDownTime- tempLastUpTime > CLICK_LIMIT) {
+                                        AccessibilityUtil.doBack(mService);
+                                        Log.i(TAG,"GoBack");
+                                    }
+                                }
+                            }, CLICK_LIMIT);
+
+                            Log.i(TAG,"isClick");
                         } else {
                             doUp();
+                            Log.i(TAG,"other");
                         }
+                        mLastUpTime = mLastDownTime;
                         mImgBall.setVisibility(VISIBLE);
                         mImgBigBall.setVisibility(INVISIBLE);
                         mCurrentMode = MODE_NONE;
@@ -148,6 +177,11 @@ public class FloatBallView extends LinearLayout {
                 return true;
             }
         });
+    }
+
+    private boolean isDoubleClick() {
+        Log.i(TAG,mLastDownTime-mLastUpTime +"");
+        return mLastDownTime- mLastUpTime < CLICK_LIMIT;
     }
 
     private boolean isLongTouch() {

@@ -1,6 +1,9 @@
 package com.wangxiandeng.floatball;
 
 import android.app.Activity;
+import android.app.admin.DevicePolicyManager;
+import android.content.ComponentName;
+import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
@@ -18,6 +21,14 @@ public class MainActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        //获取设备管理器
+        DevicePolicyManager mDevicePolicyManager = (DevicePolicyManager) getSystemService(Context.DEVICE_POLICY_SERVICE);
+        ComponentName mComponentName = new ComponentName(this, LockReceiver.class);
+        // 判断该组件是否有系统管理员的权限
+        if (!mDevicePolicyManager.isAdminActive(mComponentName)) {
+//            mDevicePolicyManager.lockNow(); //锁屏
+            activeManager(mComponentName);    //激活权限
+        }
         initView();
         if (Build.VERSION.SDK_INT >= 23) {
             if (!Settings.canDrawOverlays(this)) {
@@ -62,5 +73,14 @@ public class MainActivity extends Activity {
             startActivity(new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS));
             Toast.makeText(this, "请先开启FloatBall辅助功能", Toast.LENGTH_SHORT).show();
         }
+    }
+    /**
+     * 激活设备管理器获取权限
+     */
+    private void activeManager(ComponentName mComponentName) {
+        Intent intent = new Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN);
+        intent.putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, mComponentName);
+        intent.putExtra(DevicePolicyManager.EXTRA_ADD_EXPLANATION, "一键锁屏");
+        startActivity(intent);
     }
 }
