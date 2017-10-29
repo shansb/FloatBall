@@ -4,7 +4,6 @@ package com.wangxiandeng.floatball;
 import android.accessibilityservice.AccessibilityService;
 import android.app.admin.DevicePolicyManager;
 import android.content.Context;
-import android.nfc.Tag;
 import android.os.Vibrator;
 import android.util.Log;
 import android.util.TypedValue;
@@ -147,10 +146,7 @@ public class FloatBallView extends LinearLayout {
                         mIsTouching = false;
                         tempLastUpTime = mLastUpTime;
                         if (mIsLongTouch) {
-                            mIsLongTouch = false;
-                            Log.i(TAG,"mIsLongTouch");
                         } else if (isDoubleClick()) {
-                            Log.i(TAG,"isDoubleClick");
                             mDevicePolicyManager.lockNow();
                         } else if (isClick(event)) {
                             postDelayed(new Runnable() {
@@ -158,15 +154,11 @@ public class FloatBallView extends LinearLayout {
                                 public void run() {
                                     if (mLastDownTime- tempLastUpTime > CLICK_LIMIT) {
                                         AccessibilityUtil.doBack(mService);
-                                        Log.i(TAG,"GoBack");
                                     }
                                 }
                             }, CLICK_LIMIT);
-
-                            Log.i(TAG,"isClick");
                         } else {
                             doUp();
-                            Log.i(TAG,"other");
                         }
                         mLastUpTime = mLastDownTime;
                         mImgBall.setVisibility(VISIBLE);
@@ -180,7 +172,6 @@ public class FloatBallView extends LinearLayout {
     }
 
     private boolean isDoubleClick() {
-        Log.i(TAG,mLastDownTime-mLastUpTime +"");
         return mLastDownTime- mLastUpTime < CLICK_LIMIT;
     }
 
